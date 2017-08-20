@@ -10,6 +10,9 @@ import android.widget.TextView;
 import com.example.a75800.zes_psngertransportation.Model.TrainModel;
 import com.example.a75800.zes_psngertransportation.R;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -20,11 +23,13 @@ public class TicketCheckAdapter extends BaseAdapter {
 
     private Context context;
     private List<TrainModel> list;
+    private int passedTrain;
 
     public TicketCheckAdapter(Context context, List<TrainModel> list) {
         super();
         this.context = context;
-        this.list = list;
+        this.list = removeToTheEndTrain(list);
+        getPassedTrain();
     }
 
     @Override
@@ -34,6 +39,45 @@ public class TicketCheckAdapter extends BaseAdapter {
         } else {
             return list.size();
         }
+    }
+
+    public int getPassedTrain(){
+        passedTrain = 0;
+        for (int i = 0;i<list.size();i++){
+            if (trainPassingState(list.get(i))==1){
+                if (trainCurrentState(list.get(i).arrivingTime,false)==0){
+                    passedTrain++;
+                }
+            }else {
+                if (trainCurrentState(list.get(i).leavingTime,false)==0){
+                    passedTrain++;
+                }
+            }
+        }
+        return passedTrain;
+    }
+
+    public TrainModel getCurrentCheckTrain(){
+        TrainModel model = new TrainModel();
+        if (getPassedTrain() != list.size()){
+            model = list.get(getPassedTrain());
+        }else {
+            model.trainNum = "无";
+            model.leavingTime = "无";
+            model.station = "无";
+        }
+        return model;
+    }
+
+    public List<TrainModel> removeToTheEndTrain(List<TrainModel> list){
+        List<TrainModel> tempModel = new ArrayList<TrainModel>();
+        for (int i = 0;i<list.size();i++){
+            TrainModel model = list.get(i);
+            if (trainPassingState(model) != 1){
+                tempModel.add(model);
+            }
+        }
+        return tempModel;
     }
 
     @Override
@@ -60,23 +104,32 @@ public class TicketCheckAdapter extends BaseAdapter {
         TextView tv_SecondLine = (TextView) view.findViewById(R.id.tv_SecondLine);
         TextView tv_Right = (TextView) view.findViewById(R.id.tv_Right);
         ImageView MainImage = (ImageView) view.findViewById(R.id.MainImage);
-
-        TrainModel model = list.get(position);
-        //设置第二行是否显示到/发
-        int trainState = 0;
-        if (model.arrivingTime.substring(0,1).equals("-")){
-            MainImage.setBackgroundResource(R.drawable.ic_originating);
-            trainState = 1;
-        }else if (model.leavingTime.substring(0,1).equals("-")){
-            MainImage.setBackgroundResource(R.drawable.ic_totheend);
-            trainState = 2;
+        TrainModel model;
+        if (position>= list.size()){
+            view.setVisibility(View.GONE);
+            return view;
         }else {
-            MainImage.setBackgroundResource(R.drawable.ic_passing);
+            model = list.get(position);
+        }
+        //设置第二行是否显示到/发
+        int trainState = trainPassingState(model);
+        if (model.arrivingTime != null ||
+                model.leavingTime != null){
+            if (model.arrivingTime.length() != 0 ||
+                    model.leavingTime.length() != 0){
+                if (trainState==0){
+                    MainImage.setBackgroundResource(R.drawable.ic_originating);
+                }else if (trainState==1){
+                    MainImage.setBackgroundResource(R.drawable.ic_totheend);
+                }else {
+                    MainImage.setBackgroundResource(R.drawable.ic_passing);
+                }
+            }
         }
         tv_FirstLine.setText(model.trainNum+" "+model.startDestination);
-        if (trainState == 0){
+        if (trainState == 2){
             tv_SecondLine.setText(model.arrivingTime+"到,"+model.leavingTime+"发");
-        }else if (trainState == 1){
+        }else if (trainState == 0){
             tv_SecondLine.setText(model.leavingTime+"发");
         }else{
             tv_SecondLine.setText(model.arrivingTime+"到");
@@ -84,5 +137,59 @@ public class TicketCheckAdapter extends BaseAdapter {
         tv_Right.setText(model.station);
 
         return view;
+    }
+
+    private int trainPassingState(TrainModel model) {
+        //0始发，1终到，2通过
+        if (model.arrivingTime.substring(0,1).equals("-")){
+            return 0;
+        }else if (model.leavingTime.substring(0,1).equals("-")){
+            return 1;
+        }else {
+            return 2;
+        }
+    }
+
+    private int trainCurrentState(String originTime,boolean isOrigin){
+        //对比当前时间，默认显示未接发的列车
+        //有以下返回值：0->已过开车时间，1->正在检票 2->停止检票 其他->距离开车剩余时间
+        Date date = new Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("HHmm");//可以方便地修改日期格式
+        int nowTime = Integer.parseInt(dateFormat.format(date));
+
+        String leavingTimeString = originTime.split(":")[0]+originTime.split(":")[1];
+        int leavingTime = Integer.parseInt(leavingTimeString);
+        int timeRemains = 0;
+        if(nowTime > leavingTime){
+            //已过开车时间
+            return 0;
+        }else if(leavingTime%100 >= nowTime%100){
+            timeRemains = leavingTime - nowTime;
+        }else {
+            //例:当前时间1850，开车时间2024，差值应为134（1小时34分钟）
+            timeRemains = ((leavingTime-100)/100 - nowTime/100)*100 + 60-(nowTime%100 - leavingTime%100);
+        }
+        if (!isOrigin){
+            if (timeRemains < 15 &&timeRemains > 3){
+                //开始检票
+                return 1;
+            }else if (timeRemains <= 3){
+                //停止检票
+                return 2;
+            }else {
+                return timeRemains;
+            }
+        }else {
+            if (timeRemains < 20 &&timeRemains > 3){
+                //开始检票
+                return 1;
+            }else if (timeRemains <= 3){
+                //停止检票
+                return 2;
+            }else {
+                return timeRemains;
+            }
+        }
+
     }
 }

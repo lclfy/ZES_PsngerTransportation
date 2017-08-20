@@ -9,12 +9,12 @@
         android:orientation="horizontal">
 
         <TextView
-            android:id="@+id/tv_chosenStation"
+            android:id="@+id/tv_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="16dp"
             android:layout_marginTop="10dp"
-            android:text="2017年8月20日，星期日"
+            android:text=""
             android:textColor="#fff"
             android:textSize="14sp" />
 
@@ -23,24 +23,24 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
+
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="36dp"
             android:gravity="end"
-            android:orientation="horizontal">
-
-
-            <CheckBox
-                android:id="@+id/cb_selectAll"
-                style="@android:style/Widget.Holo.Light.CompoundButton.CheckBox"
-                android:layout_width="match_parent"
+            android:orientation="horizontal"
+            android:layout_weight="0.11">
+            <Button
+                android:id="@+id/bt_naviToNow"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="16dp"
-                android:layout_marginLeft="16dp"
-                android:layout_marginTop="2dp"
-                android:layout_weight="1"
-                android:text="显示全部"
-                android:textColor="#fff" />
+                android:background="#00000000"
+                android:text="点此定位至当前"
+                android:textColor="#fff"
+                android:textSize="14dp" />
+
         </LinearLayout>
 
 
@@ -66,7 +66,7 @@
                 android:layout_alignParentTop="true"
                 android:id="@+id/tv_alreadyPassingTrainCount"
                 android:layout_marginTop="16dp"
-                android:text="62趟"
+                android:text="——趟"
                 android:textColor="#fff"
                 android:textSize="30sp" />
 
@@ -96,7 +96,7 @@
                 android:layout_alignParentTop="true"
                 android:id="@+id/tv_dayLeft"
                 android:layout_marginTop="16dp"
-                android:text="309趟"
+                android:text="——趟"
                 android:textColor="#fff"
                 android:textSize="30sp" />
             <TextView
