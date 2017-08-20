@@ -3,7 +3,7 @@
     <color name="colorPrimary">#03A9F4</color>
     <color name="colorPrimaryDark">#0288D1</color>
     <color name="colorAccent">#FF4081</color>
-    <color name="colorOriginating">#0D5302</color>
-    <color name="colorPassing">#FFA000</color>
-    <color name="colorToTheEnd">#B0120A</color>
+    <color name="colorOriginating">#49b0f5</color>
+    <color name="colorPassing">#36c4ac</color>
+    <color name="colorToTheEnd">#f76762</color>
 </resources>
