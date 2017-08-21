@@ -6,4 +6,5 @@
     <color name="colorOriginating">#49b0f5</color>
     <color name="colorPassing">#36c4ac</color>
     <color name="colorToTheEnd">#f76762</color>
+    <color name="Grey">#dedede</color>
 </resources>

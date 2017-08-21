@@ -5,6 +5,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.example.a75800.zes_psngertransportation.Model.TrainModel;
@@ -78,6 +79,7 @@ public class TrainTimetableAdapter extends BaseAdapter {
         TextView tvHeader = (TextView) view.findViewById(R.id.tv_Header);
         tvHeader.setVisibility(View.GONE);
         TextView tv_LeftFirstLine = (TextView) view.findViewById(R.id.tv_LeftFirstLine);
+        LinearLayout layout = (LinearLayout)view.findViewById(R.id.timeTable_layout);
         TextView tv_LeftSecondLine = (TextView) view.findViewById(R.id.tv_LeftSecondLine);
         TextView tv_FirstLine = (TextView) view.findViewById(R.id.tv_FirstLine);
         TextView tv_SecondLine = (TextView) view.findViewById(R.id.tv_SecondLine);
@@ -111,6 +113,7 @@ public class TrainTimetableAdapter extends BaseAdapter {
                     if (trainCurrentState == 0){
                         tv_Right.setText("已发车");
                         tv_Right.setTextColor(this.context.getResources().getColor(R.color.colorOriginating));
+                        layout.setBackgroundColor(this.context.getResources().getColor(R.color.Grey));
                     }else if (trainCurrentState == 1){
                         tv_Right.setText("正在检票");
                         tv_Right.setTextColor(this.context.getResources().getColor(R.color.colorPassing));
@@ -137,6 +140,7 @@ public class TrainTimetableAdapter extends BaseAdapter {
                     if (trainCurrentState == 0){
                         tv_Right.setText("已到达");
                         tv_Right.setTextColor(this.context.getResources().getColor(R.color.colorOriginating));
+                        layout.setBackgroundColor(this.context.getResources().getColor(R.color.Grey));
                     } else if (trainCurrentState == 1 ||
                             trainCurrentState == 2 ){
                         tv_Right.setText("即将终到");
@@ -161,6 +165,7 @@ public class TrainTimetableAdapter extends BaseAdapter {
                     if (trainCurrentState == 0){
                         tv_Right.setText("已发车");
                         tv_Right.setTextColor(this.context.getResources().getColor(R.color.colorOriginating));
+                        layout.setBackgroundColor(this.context.getResources().getColor(R.color.Grey));
                     }else if (trainCurrentState == 1){
                         tv_Right.setText("正在检票");
                         tv_Right.setTextColor(this.context.getResources().getColor(R.color.colorPassing));
@@ -225,7 +230,8 @@ public class TrainTimetableAdapter extends BaseAdapter {
             //例:当前时间1850，开车时间2024，差值应为134（1小时34分钟）
             timeRemains = ((leavingTime-100)/100 - nowTime/100)*100 + 60-(nowTime%100 - leavingTime%100);
         }
-        if (!isOrigin){
+//        if (!isOrigin){
+        //去除始发车提前20分钟检票的代码
             if (timeRemains < 15 &&timeRemains > 3){
                 //开始检票
                 return 1;
@@ -235,17 +241,17 @@ public class TrainTimetableAdapter extends BaseAdapter {
             }else {
                 return timeRemains;
             }
-        }else {
-            if (timeRemains < 20 &&timeRemains > 3){
-                //开始检票
-                return 1;
-            }else if (timeRemains <= 3){
-                //停止检票
-                return 2;
-            }else {
-                return timeRemains;
-            }
-        }
+//        }else {
+//            if (timeRemains < 20 &&timeRemains > 3){
+//                //开始检票
+//                return 1;
+//            }else if (timeRemains <= 3){
+//                //停止检票
+//                return 2;
+//            }else {
+//                return timeRemains;
+//            }
+//        }
 
     }
 
