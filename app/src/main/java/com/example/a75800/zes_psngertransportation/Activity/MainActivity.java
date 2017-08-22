@@ -5,6 +5,8 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Message;
 import android.support.design.widget.TabLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -25,6 +27,7 @@ import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,6 +39,7 @@ import com.example.a75800.zes_psngertransportation.Adapter.TicketCheckAdapter;
 import com.example.a75800.zes_psngertransportation.Adapter.TrainTimetableAdapter;
 import com.example.a75800.zes_psngertransportation.Model.TrainModel;
 import com.example.a75800.zes_psngertransportation.R;
+import com.example.a75800.zes_psngertransportation.Util.LocalStore;
 
 import org.w3c.dom.Text;
 
@@ -43,6 +47,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -130,6 +136,11 @@ public class MainActivity extends AppCompatActivity {
                 false, false, false, false,false,
                 false, false, false, false,false};
         private String selectedStationsString = "";
+        Timer timer = new Timer();
+
+        //加载动画
+        private RelativeLayout ani_ticketCheck;
+        private RelativeLayout ani_trainTimeTable;
 
         public PlaceholderFragment() {
         }
@@ -147,6 +158,7 @@ public class MainActivity extends AppCompatActivity {
 
         public void refreshTicketCheck(String selectedStation) {
             //刷新班计划内容
+            ani_ticketCheck = (RelativeLayout)viewOfTicketCheck.findViewById(R.id.ani_ticketCheck);
             mtv_chosenStation = (TextView)viewOfTicketCheck.findViewById(R.id.tv_chosenStation);
             mlv_ticketCheck = (ListView)viewOfTicketCheck.findViewById(R.id.lv_ticketCheck);
             TicketCheckAdapter ticketCheckAdapter = new TicketCheckAdapter(getActivity(), trainData,selectedStation);
@@ -169,32 +181,64 @@ public class MainActivity extends AppCompatActivity {
             bt_selectStation = (Button)viewOfTicketCheck.findViewById(R.id.bt_selectStation);
             bt_selectStation.setOnClickListener(this);
             passedTrain_WithoutToTheEndTrain = ticketCheckAdapter.getPassedTrain(selectedStation);
-            if (passedTrain_WithoutToTheEndTrain <= ticketCheckAdapter.removeToTheEndTrain_sortByTime(trainData).size()-2){
-                mlv_ticketCheck.setSelection(passedTrain_WithoutToTheEndTrain+2);
-            }
+                if (passedTrain_WithoutToTheEndTrain <= ticketCheckAdapter.removeToTheEndTrain_sortByTime(trainData).size()){
+                    mlv_ticketCheck.setSelection(passedTrain_WithoutToTheEndTrain);
+                }
+            ani_ticketCheck.setVisibility(View.GONE);
         }
 
-        public void refreshTrainTime(){
+        public void refreshTrainTime(boolean onlyRefreshTitle){
             //刷新时刻表内容
+            ani_trainTimeTable = (RelativeLayout)viewOfTrainTimetable.findViewById(R.id.ani_trainTimeTable);
             //列表
             mlv_train_timetable = (ListView)viewOfTrainTimetable.findViewById(R.id.lv_train_timetable);
             TrainTimetableAdapter trainTimetableAdapter = new TrainTimetableAdapter(getActivity(),trainData);
             mlv_train_timetable.setDivider(null);
-            mlv_train_timetable.setAdapter(trainTimetableAdapter);
             //列车时刻表
             mtv_passedTrainCount = (TextView)viewOfTrainTimetable.findViewById(R.id.tv_alreadyPassingTrainCount);
             mtv_trainRemains = (TextView)viewOfTrainTimetable.findViewById(R.id.tv_dayLeft);
             passedTrain_All = trainTimetableAdapter.getPassedTrain();
             mtv_passedTrainCount.setText(passedTrain_All+"趟");
             mtv_trainRemains.setText((trainData.size()-passedTrain_All)+"趟");
-            mlv_train_timetable.setSelection(passedTrain_All);
+
+            if (!onlyRefreshTitle){
+                mlv_train_timetable.setAdapter(trainTimetableAdapter);
+                mlv_train_timetable.setSelection(passedTrain_All);
+            }
+
             naviToNow = (Button)viewOfTrainTimetable.findViewById(R.id.bt_naviToNow);
             naviToNow.setOnClickListener(this);
             TextView mtv_date = (TextView)viewOfTrainTimetable.findViewById(R.id.tv_date);
             Date date = new Date();
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy年MM月dd日");//可以方便地修改日期格式
             mtv_date.setText(dateFormat.format(date));
+            ani_trainTimeTable.setVisibility(View.GONE);
         }
+
+        //定时刷新数据
+        final Handler handler = new Handler() {
+            public void handleMessage(Message msg) {
+                switch (msg.what) {
+                    case 1:
+                        update();
+                        break;
+                }
+                super.handleMessage(msg);
+            }
+            void update() {
+                refreshTicketCheck(selectedStationsString);
+                //刷新时刻表
+                refreshTrainTime(true);
+                Toast.makeText(getActivity(), "刷新完成", Toast.LENGTH_SHORT).show();
+            }
+        };
+        TimerTask task = new TimerTask() {
+            public void run() {
+                Message message = new Message();
+                message.what = 1;
+                handler.sendMessage(message);
+            }
+        };
 
 
         @Override
@@ -226,7 +270,6 @@ public class MainActivity extends AppCompatActivity {
                     passedTrain_All = trainTimetableAdapter.getPassedTrain();
                     mtv_passedTrainCount.setText(passedTrain_All+"趟");
                     mtv_trainRemains.setText((trainData.size()-passedTrain_All)+"趟");
-//                    mlv_train_timetable.smoothScrollToPosition(passedTrain, 3);
                     mlv_train_timetable.setSelection(passedTrain_All);
                     break;
                 case R.id.bt_selectStation:
@@ -254,8 +297,13 @@ public class MainActivity extends AppCompatActivity {
                             trainModel.station = trainFromDB.getString("Station");
                             trainData.add(trainModel);
                         }
-                        refreshTicketCheck("");
-                        refreshTrainTime();
+                        //获取存储的检票口
+                        selectedStations = LocalStore.getApkEnableArray(getActivity(),30);
+                        selectedStationsString = transStationsToString();
+                        refreshTicketCheck(selectedStationsString);
+                        //刷新时刻表
+                        refreshTrainTime(false);
+                        timer.schedule(task, 1000 * 60, 1000 * 60); //启动timer
                     }else {
                         //String error = "错误" + e.toString().split("error")[1].replaceAll("\"", "").replaceAll("\\}", "");
                         Toast.makeText(getActivity(), "网络连接失败", Toast.LENGTH_SHORT).show();
@@ -284,6 +332,7 @@ public class MainActivity extends AppCompatActivity {
                         public void onClick(DialogInterface dialog, int which)
                         {
                             selectedStationsString = transStationsToString();
+                            LocalStore.saveApkEnalbleArray(getActivity(),selectedStations);
                             refreshTicketCheck(selectedStationsString);
                         }
                     }).setNegativeButton("取消", null).create();
@@ -300,6 +349,8 @@ public class MainActivity extends AppCompatActivity {
             }
             return stationString;
         }
+
+
     }
 
 

@@ -43,4 +43,7 @@ dependencies {
 
     // LeanCloud 应用内搜索包
     compile ('cn.leancloud.android:avoscloud-search:v4.4.4@aar')
+
+    //一卡通加载动画
+    compile 'com.wang.avi:library:2.1.3'
 }

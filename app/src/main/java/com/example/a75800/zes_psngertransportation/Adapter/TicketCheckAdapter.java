@@ -53,12 +53,7 @@ public class TicketCheckAdapter extends BaseAdapter {
     }
 
     public int getPassedTrain(String station){
-        //如果选择了检票口，应当返回当前检票口的数量
         passedTrain = 0;
-//        if (!station.equals("")){
-//            //如果选择了检票口
-//
-//        }
         for (int i = 0;i<list.size();i++){
             if (trainPassingState(list.get(i))==1){
                 if (trainCurrentState(list.get(i).arrivingTime,false)==0){
@@ -75,12 +70,16 @@ public class TicketCheckAdapter extends BaseAdapter {
 
     public TrainModel getCurrentCheckTrain(){
         TrainModel model = new TrainModel();
-        if (getPassedTrain("") != list.size()){
-            model = list.get(getPassedTrain("")+1);
+        if (getPassedTrain("") < list.size()){
+            model = list.get(getPassedTrain(""));
         }else {
-            model.trainNum = "无";
-            model.leavingTime = "无";
-            model.station = "无";
+            if (list.size()>0){
+                model = list.get(0);
+            }else {
+                model.trainNum = "无";
+                model.leavingTime = "无";
+                model.station = "无";
+            }
         }
         return model;
     }
@@ -142,13 +141,22 @@ public class TicketCheckAdapter extends BaseAdapter {
     }
 
     public List<TrainModel> selectTargetStations(String selectedStation,List<TrainModel> list){
+        //匹配一下选出的检票口…
         List<TrainModel> tempModel = new ArrayList<TrainModel>();
         String[] everyStations = selectedStation.split(" ");
         for (int i = 0;i<everyStations.length;i++){
             for (TrainModel model:list) {
                 if (model!=null && model.station!=null){
-                    if (model.station.contains(everyStations[i])){
-                        tempModel.add(model);
+                    if (model.station.contains(",")){
+                        String[] tempStation = model.station.split(",");
+                        if (tempStation[0].equals(everyStations[i])||
+                                tempStation[1].equals(everyStations[i])){
+                            tempModel.add(model);
+                        }
+                    }else {
+                        if (model.station.equals(everyStations[i])){
+                            tempModel.add(model);
+                        }
                     }
                 }
             }
