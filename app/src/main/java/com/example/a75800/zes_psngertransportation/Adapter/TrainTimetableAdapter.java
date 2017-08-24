@@ -88,12 +88,6 @@ public class TrainTimetableAdapter extends BaseAdapter {
         //默认显示当前时间以后的车
         TrainModel model = new TrainModel();
         model = list.get(position);
-//        if (position+passedTrain >= list.size()){
-//            view.setVisibility(View.GONE);
-//            return view;
-//        }else {
-//            model = list.get(position+passedTrain);
-//        }
         //判断发-到-通过->0，1，2
         int trainPassingState = 0;
         //判断当前状态 已开走 正在检票 停止检票
@@ -231,7 +225,7 @@ public class TrainTimetableAdapter extends BaseAdapter {
             timeRemains = ((leavingTime-100)/100 - nowTime/100)*100 + 60-(nowTime%100 - leavingTime%100);
         }
 //        if (!isOrigin){
-        //去除始发车提前20分钟检票的代码
+        //始发车提前20分钟检票的代码
             if (timeRemains < 15 &&timeRemains > 3){
                 //开始检票
                 return 1;

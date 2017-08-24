@@ -16,6 +16,9 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,10 +27,12 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
+import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -60,9 +65,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
         //创建一个adapter会返回该activity三个fragment中的任意一个主要section
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
 
@@ -74,30 +76,6 @@ public class MainActivity extends AppCompatActivity {
         tabLayout.setupWithViewPager(mViewPager);
 
     }
-
-
-    //右上角小按钮
-//    @Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        // Inflate the menu; this adds items to the action bar if it is present.
-//        getMenuInflater().inflate(R.menu.menu_main, menu);
-//        return true;
-//    }
-//
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        // Handle action bar item clicks here. The action bar will
-//        // automatically handle clicks on the Home/Up button, so long
-//        // as you specify a parent activity in AndroidManifest.xml.
-//        int id = item.getItemId();
-//
-//        //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
-//
-//        return super.onOptionsItemSelected(item);
-//    }
 
     public static class PlaceholderFragment extends Fragment implements View.OnClickListener {
         /**
@@ -137,6 +115,9 @@ public class MainActivity extends AppCompatActivity {
                 false, false, false, false,false};
         private String selectedStationsString = "";
         Timer timer = new Timer();
+        //搜索框,搜索用模型
+        private SearchView mSv_trainNumberSearch;
+        private List<TrainModel> searchTrainData = new ArrayList<TrainModel>();
 
         //加载动画
         private RelativeLayout ani_ticketCheck;
@@ -187,24 +168,59 @@ public class MainActivity extends AppCompatActivity {
             ani_ticketCheck.setVisibility(View.GONE);
         }
 
-        public void refreshTrainTime(boolean onlyRefreshTitle){
+        public void refreshTrainTime(boolean onlyRefreshTitle,boolean searched){
             //刷新时刻表内容
             ani_trainTimeTable = (RelativeLayout)viewOfTrainTimetable.findViewById(R.id.ani_trainTimeTable);
             //列表
             mlv_train_timetable = (ListView)viewOfTrainTimetable.findViewById(R.id.lv_train_timetable);
-            TrainTimetableAdapter trainTimetableAdapter = new TrainTimetableAdapter(getActivity(),trainData);
+            TrainTimetableAdapter trainTimetableAdapter;
+            if (!searched){
+                trainTimetableAdapter = new TrainTimetableAdapter(getActivity(),trainData);
+            }else {
+                trainTimetableAdapter = new TrainTimetableAdapter(getActivity(),searchTrainData);
+            }
+
             mlv_train_timetable.setDivider(null);
             //列车时刻表
             mtv_passedTrainCount = (TextView)viewOfTrainTimetable.findViewById(R.id.tv_alreadyPassingTrainCount);
             mtv_trainRemains = (TextView)viewOfTrainTimetable.findViewById(R.id.tv_dayLeft);
-            passedTrain_All = trainTimetableAdapter.getPassedTrain();
-            mtv_passedTrainCount.setText(passedTrain_All+"趟");
-            mtv_trainRemains.setText((trainData.size()-passedTrain_All)+"趟");
-
-            if (!onlyRefreshTitle){
-                mlv_train_timetable.setAdapter(trainTimetableAdapter);
-                mlv_train_timetable.setSelection(passedTrain_All);
+            if (!searched){
+                passedTrain_All = trainTimetableAdapter.getPassedTrain();
+                mtv_passedTrainCount.setText(passedTrain_All+"趟");
+                mtv_trainRemains.setText((trainData.size()-passedTrain_All)+"趟");
             }
+            if (!onlyRefreshTitle){
+                if (!searched){
+                    mlv_train_timetable.setSelection(passedTrain_All);
+                }
+                mlv_train_timetable.setAdapter(trainTimetableAdapter);
+            }
+            mSv_trainNumberSearch = (SearchView) viewOfTrainTimetable.findViewById(R.id.sv_trainNumberSearch);
+            // 设置搜索文本监听
+            mSv_trainNumberSearch.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                // 当点击搜索按钮时触发该方法
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    return false;
+                }
+                // 当搜索内容改变时触发该方法
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    searchTrainData.clear();
+                    if (!TextUtils.isEmpty(newText)) {
+                        for (TrainModel model:trainData) {
+                            if (model.trainNum.contains(newText)){
+                                TrainModel tempModel = model;
+                                searchTrainData.add(tempModel);
+                            }
+                        }
+                        refreshTrainTime(false,true);
+                    } else {
+                        refreshTrainTime(false,false);
+                    }
+                    return false;
+                }
+            });
 
             naviToNow = (Button)viewOfTrainTimetable.findViewById(R.id.bt_naviToNow);
             naviToNow.setOnClickListener(this);
@@ -227,8 +243,7 @@ public class MainActivity extends AppCompatActivity {
             }
             void update() {
                 refreshTicketCheck(selectedStationsString);
-                //刷新时刻表
-                refreshTrainTime(true);
+                refreshTrainTime(true,false);
                 Toast.makeText(getActivity(), "刷新完成", Toast.LENGTH_SHORT).show();
             }
         };
@@ -247,12 +262,12 @@ public class MainActivity extends AppCompatActivity {
             View rootView;
             switch (getArguments().getInt(ARG_SECTION_NUMBER)){
                 case 1:
-                    rootView = inflater.inflate(R.layout.fragment_ticketcheck_daywork, container, false);
-                    this.viewOfTicketCheck = rootView;
-                    break;
-                case 2:
                     rootView = inflater.inflate(R.layout.fragment_train_timetable,container,false);
                     this.viewOfTrainTimetable = rootView;
+                    break;
+                case 2:
+                    rootView = inflater.inflate(R.layout.fragment_ticketcheck_daywork, container, false);
+                    this.viewOfTicketCheck = rootView;
                     initData();
                     break;
                 default:
@@ -297,12 +312,12 @@ public class MainActivity extends AppCompatActivity {
                             trainModel.station = trainFromDB.getString("Station");
                             trainData.add(trainModel);
                         }
-                        //获取存储的检票口
+                        //获取存储的检票口并刷新检票动态
                         selectedStations = LocalStore.getApkEnableArray(getActivity(),30);
                         selectedStationsString = transStationsToString();
                         refreshTicketCheck(selectedStationsString);
                         //刷新时刻表
-                        refreshTrainTime(false);
+                        refreshTrainTime(false,false);
                         timer.schedule(task, 1000 * 60, 1000 * 60); //启动timer
                     }else {
                         //String error = "错误" + e.toString().split("error")[1].replaceAll("\"", "").replaceAll("\\}", "");
@@ -351,6 +366,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
+
+
     }
 
 
@@ -380,9 +397,9 @@ public class MainActivity extends AppCompatActivity {
         public CharSequence getPageTitle(int position) {
             switch (position) {
                 case 0:
-                    return "检票";
-                case 1:
                     return "列车时刻";
+                case 1:
+                    return "检票";
             }
             return null;
         }
